@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Smart Resume Screener</title>
+  </head>
+  <body>
+    <h2>Smart Resume Screener — Minimal Demo</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <label>Name: <input type="text" name="name" id="name" required/></label><br/>
+      <label>Resume PDF: <input type="file" name="file" id="file" accept=".pdf" required/></label><br/>
+      <button type="submit">Upload & Parse</button>
+    </form>
+
+    <hr/>
+    <h3>Match candidate with job</h3>
+    <textarea id="job" rows="8" cols="80" placeholder="Paste job description here"></textarea><br/>
+    <input id="resume_id" placeholder="Parsed resume id (from upload)" /><br/>
+    <input id="req_skills" placeholder="Required skills (comma-separated)" /><br/>
+    <button id="matchBtn">Match</button>
+
+    <pre id="out"></pre>
+
+    <script>
+      const out = (o)=> document.getElementById("out").innerText = JSON.stringify(o, null, 2);
+
+      document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = new FormData();
+        form.append("name", document.getElementById("name").value);
+        form.append("file", document.getElementById("file").files[0]);
+        const res = await fetch('/parse', {method:'POST', body: form});
+        const j = await res.json();
+        out(j);
+      });
+
+      document.getElementById("matchBtn").addEventListener("click", async () => {
+        const job = document.getElementById("job").value;
+        const rid = document.getElementById("resume_id").value;
+        const req_skills = document.getElementById("req_skills").value.split(',').map(s=>s.trim()).filter(Boolean);
+        const payload = { job_description: job, required_skills: req_skills };
+        if (rid) payload.resume_id = Number(rid);
+        else {
+          alert('Provide resume_id from upload for demo or change code to send resume_text.');
+          return;
+        }
+        const res = await fetch('/match', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(payload)});
+        const j = await res.json();
+        out(j);
+      });
+    </script>
+  </body>
+</html>
